@@ -1,0 +1,92 @@
+# 1. Install required libraries in Google Colab
+# ultralytics -> for YOLO object detection
+# opencv-python-headless -> for image processing (Colab safe version)
+!pip install ultralytics opencv-python-headless
+
+
+# 2. Let the USER upload a room image as input
+from google.colab import files
+uploaded = files.upload()   # This opens a file chooser for user to select image
+
+
+# 3. Import required libraries for object detection
+from ultralytics import YOLO   # YOLO model class
+import cv2                    # For reading and saving images
+import matplotlib.pyplot as plt   # For displaying images in Colab
+
+
+# 4. Load the MOST POWERFUL YOLOv8 model for maximum accuracy
+# yolov8x = Extra Large model (best detection accuracy)
+model = YOLO("yolov8x.pt")
+
+
+# 5. Get the name of the uploaded image file
+# uploaded is a dictionary, so we take the first key (file name)
+img_path = list(uploaded.keys())[0]
+print("✅ User uploaded:", img_path)
+
+
+# 6. Read the uploaded image using OpenCV
+img = cv2.imread(img_path)
+
+
+# 7. Run object detection on the image with LOW confidence threshold
+# conf=0.1 means detect even small or low-confidence objects
+results = model(img, conf=0.1)
+
+
+# 8. Extract detected bounding boxes and class names
+boxes = results[0].boxes      # Stores coordinates, class IDs, confidence
+names = model.names           # Stores all object class names (COCO dataset)
+
+
+# 9. Create a list to store detected object names
+detected_objects = []
+
+
+# 10. Print heading
+print("\n✅ ALL OBJECTS DETECTED IN THE ROOM:\n")
+
+
+# 11. Loop through each detected object
+for box in boxes:
+    
+    # Get the detected object's class ID (number)
+    class_id = int(box.cls[0])
+    
+    # Get confidence score of the detection
+    confidence = float(box.conf[0])
+    
+    # Convert class ID to actual object name
+    object_name = names[class_id]
+    
+    # Store the detected object name in the list
+    detected_objects.append(object_name)
+    
+    # Print detected object with confidence
+    print(f"🎯 {object_name} | Confidence: {confidence:.2f}")
+
+
+# 12. Draw bounding boxes and labels on the image
+output_image = results[0].plot()
+
+
+# 13. Save the output image with detections
+cv2.imwrite("room_detected_output.jpg", output_image)
+
+
+# 14. Display the output image in Google Colab
+plt.figure(figsize=(10,10))
+plt.imshow(cv2.cvtColor(output_image, cv2.COLOR_BGR2RGB))
+plt.axis("off")
+plt.show()
+
+
+# 15. Display the final list of all detected objects (unique list)
+print("\n✅ FINAL OBJECT LIST FOUND IN THE ROOM:")
+print(set(detected_objects))
+
+
+# 16. Show where the output image is saved
+print("\n📁 Output saved as: room_detected_output.jpg")
+

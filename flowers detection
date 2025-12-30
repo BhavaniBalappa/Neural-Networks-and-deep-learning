@@ -1,0 +1,78 @@
+# ============================================
+# ✅ 1. INSTALL REQUIRED LIBRARIES
+# ============================================
+!pip install torch torchvision transformers pillow
+
+
+# ============================================
+# ✅ 2. USER UPLOADS FLOWER IMAGE
+# ============================================
+from google.colab import files
+uploaded = files.upload()
+
+
+# ============================================
+# ✅ 3. IMPORT LIBRARIES
+# ============================================
+import torch
+from PIL import Image
+from transformers import CLIPProcessor, CLIPModel
+import matplotlib.pyplot as plt
+
+
+# ============================================
+# ✅ 4. LOAD CLIP MODEL (BEST FOR ZERO-SHOT)
+# ============================================
+model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+
+
+# ============================================
+# ✅ 5. BASIC 50 FLOWER NAMES
+# ============================================
+flower_names_50 = [
+    "rose","sunflower","tulip","daisy","dandelion","hibiscus","lotus","lily","orchid","jasmine",
+    "marigold","chrysanthemum","carnation","petunia","geranium","lavender","magnolia","poppy","azalea","camellia",
+    "foxglove","iris","water lily","bougainvillea","anthurium","begonia","bluebell","buttercup","calendula","columbine",
+    "coreopsis","cosmos","gardenia","gazania","gladiolus","honeysuckle","lilac","morning glory","nasturtium","pansy",
+    "periwinkle","phlox","primrose","snapdragon","sweet pea","zinnia","frangipani","clematis","lotus","hibiscus"
+]
+
+
+# ============================================
+# ✅ 6. LOAD USER IMAGE
+# ============================================
+img_path = list(uploaded.keys())[0]
+image = Image.open(img_path)
+
+plt.imshow(image)
+plt.axis("off")
+plt.show()
+
+
+# ============================================
+# ✅ 7. ZERO-SHOT FLOWER CLASSIFICATION
+# ============================================
+inputs = processor(
+    text=[f"This is a photo of a {name}" for name in flower_names_50],
+    images=image,
+    return_tensors="pt",
+    padding=True
+)
+
+with torch.no_grad():
+    outputs = model(**inputs)
+    logits_per_image = outputs.logits_per_image
+    probs = logits_per_image.softmax(dim=1)
+
+pred_index = torch.argmax(probs).item()
+predicted_flower = flower_names_50[pred_index]
+confidence = probs[0][pred_index].item()
+
+
+# ============================================
+# ✅ 8. FINAL OUTPUT
+# ============================================
+print("\n✅ 50-FLOWER DETECTION RESULT (CLIP ZERO-SHOT):")
+print(f"🌸 Flower Name: {predicted_flower}")
+print(f"🎯 Confidence: {confidence:.2f}")
